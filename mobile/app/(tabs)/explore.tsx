@@ -1,112 +1,380 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
+import { router } from 'expo-router';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
+import { useAuth } from '@/contexts/auth-context';
+import { MOCK_PLAN, GeneratedPlan } from '@/types/plan';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+export default function PlansScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const { user } = useAuth();
 
-export default function TabTwoScreen() {
+  const [plans, setPlans] = useState<GeneratedPlan[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // For now, use mock data
+  // TODO: Replace with actual API call
+  const loadPlans = async () => {
+    setLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setPlans([MOCK_PLAN]);
+      setLoading(false);
+      setRefreshing(false);
+    }, 500);
+  };
+
+  useEffect(() => {
+    loadPlans();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadPlans();
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const renderPlanCard = ({ item }: { item: GeneratedPlan }) => {
+    const budgetStatus = item.budgetDifference >= 0 ? 'under' : 'over';
+    const budgetColor = budgetStatus === 'under' ? '#34C759' : '#FF3B30';
+
+    return (
+      <TouchableOpacity
+        style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={() => router.push(`/(plan)/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        {/* Header */}
+        <View style={styles.planHeader}>
+          <View style={styles.planRoute}>
+            <Text style={[styles.cityText, { color: colors.text }]}>
+              {item.origin}
+            </Text>
+            <Text style={[styles.arrowText, { color: colors.tabIconDefault }]}>→</Text>
+            <Text style={[styles.cityText, { color: colors.text }]}>
+              {item.destination}
+            </Text>
+          </View>
+          <View style={[styles.statusBadge, {
+            backgroundColor: item.status === 'completed' ? '#34C759' : '#FF9500'
+          }]}>
+            <Text style={styles.statusText}>
+              {item.status === 'completed' ? '✓ Hazır' : '⏳ Hazırlanıyor'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Dates */}
+        <Text style={[styles.dateText, { color: colors.tabIconDefault }]}>
+          📅 {formatDate(item.startDate)} - {formatDate(item.endDate)} ({item.totalDays} gün)
+        </Text>
+
+        {/* Cities */}
+        <View style={styles.citiesContainer}>
+          {item.dailyItinerary.slice(0, 3).map((day, index) => (
+            <View
+              key={index}
+              style={[styles.cityBadge, { backgroundColor: `${colors.tint}20` }]}
+            >
+              <Text style={[styles.cityBadgeText, { color: colors.tint }]}>
+                {day.city}
+              </Text>
+            </View>
+          ))}
+          {item.dailyItinerary.length > 3 && (
+            <Text style={[styles.moreText, { color: colors.tabIconDefault }]}>
+              +{item.dailyItinerary.length - 3} more
+            </Text>
+          )}
+        </View>
+
+        {/* Budget */}
+        <View style={styles.budgetContainer}>
+          <View style={styles.budgetRow}>
+            <Text style={[styles.budgetLabel, { color: colors.tabIconDefault }]}>
+              Tahmini Maliyet:
+            </Text>
+            <Text style={[styles.budgetAmount, { color: colors.text }]}>
+              ${item.totalEstimatedCost}
+            </Text>
+          </View>
+          <View style={styles.budgetRow}>
+            <Text style={[styles.budgetLabel, { color: colors.tabIconDefault }]}>
+              Bütçeniz:
+            </Text>
+            <Text style={[styles.budgetAmount, { color: colors.text }]}>
+              ${item.userBudget}
+            </Text>
+          </View>
+          <View style={[styles.budgetDifference, { backgroundColor: `${budgetColor}20` }]}>
+            <Text style={[styles.budgetDifferenceText, { color: budgetColor }]}>
+              {budgetStatus === 'under' ? '💰' : '⚠️'} Bütçenizin{' '}
+              {Math.abs(item.budgetDifference)}${' '}
+              {budgetStatus === 'under' ? 'altında' : 'üstünde'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors.tabIconDefault }]}>
+            Detayları görmek için tıklayın
+          </Text>
+          <Text style={[styles.arrowIcon, { color: colors.tint }]}>→</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={[styles.emptyIcon, { color: colors.tabIconDefault }]}>✈️</Text>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
+        Henüz Plan Yok
+      </Text>
+      <Text style={[styles.emptySubtitle, { color: colors.tabIconDefault }]}>
+        Ana sayfadan "Yeni Plan Oluştur" butonuna tıklayarak ilk seyahat planınızı oluşturun!
+      </Text>
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={() => router.push('/(tabs)')}
+      >
+        <Text style={styles.createButtonText}>Ana Sayfaya Git</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (loading && !refreshing) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.tint} />
+        <Text style={[styles.loadingText, { color: colors.tabIconDefault }]}>
+          Planlarınız yükleniyor...
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Seyahat Planlarım
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.tabIconDefault }]}>
+          {plans.length} plan
+        </Text>
+      </View>
+
+      <FlatList
+        data={plans}
+        renderItem={renderPlanCard}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={[
+          styles.listContent,
+          plans.length === 0 && styles.emptyListContent,
+        ]}
+        ListEmptyComponent={renderEmptyState}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.tint}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
   },
-  titleContainer: {
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+  },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+  },
+  planCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  planHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  planRoute: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+  },
+  cityText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  arrowText: {
+    fontSize: 16,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dateText: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  citiesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  cityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  cityBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  moreText: {
+    fontSize: 12,
+    paddingVertical: 6,
+  },
+  budgetContainer: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  budgetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  budgetLabel: {
+    fontSize: 14,
+  },
+  budgetAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  budgetDifference: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  budgetDifferenceText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  footerText: {
+    fontSize: 13,
+  },
+  arrowIcon: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  createButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -187,23 +187,75 @@ generated_plans        # AI tarafından oluşturulan planlar (JSONB)
 
 ## 📄 Dokümantasyon
 
-- **CLAUDE.md**: Claude Code için teknik rehber
-- **docs/PRD.md**: Detaylı Ürün Gereksinimleri Dokümanı (Türkçe)
+- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)**: Komple kurulum ve test rehberi
+- **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**: Supabase konfigürasyon rehberi
+- **[backend/README.md](./backend/README.md)**: Backend API dokümantasyonu
+- **[mobile/README.md](./mobile/README.md)**: Mobil uygulama dokümantasyonu
+- **[docs/PRD.md](./docs/PRD.md)**: Detaylı Ürün Gereksinimleri (Türkçe)
+- **[CLAUDE.md](./CLAUDE.md)**: Claude Code için teknik rehber
+
+### 🚀 Hızlı Başlangıç
+
+1. **Supabase Setup**: `SUPABASE_SETUP.md` dosyasını takip edin
+2. **Backend**: `cd backend && npm install && npm run dev`
+3. **Mobile**: `cd mobile && npm install && npm start`
+4. **Test**: `SETUP_GUIDE.md` içindeki test senaryolarını çalıştırın
 
 ## 🚧 Proje Durumu
 
-**Mevcut Durum:** Erken MVP geliştirme aşamasında
-- ✅ Mobil uygulama temel iskelet kuruldu (Expo + routing + tema)
-- ⏳ Backend ve frontend minimal kurulum aşamasında
-- ⏳ Temel seyahat planlama özellikleri henüz geliştirilmedi
+**Mevcut Durum:** MVP Temel Özellikler Tamamlandı ✅
 
-**Sıradaki Adımlar:**
-1. Supabase authentication entegrasyonu
-2. Backend API endpoint'lerinin geliştirilmesi
-3. Üçüncü parti API entegrasyonları
-4. AI prompt mühendisliği ve optimizasyon
-5. Mobil uygulamada plan oluşturma UI akışı
-6. Plan görüntüleme ekranları
+### ✅ Tamamlanan Özellikler
+
+**US-1: Authentication (Kimlik Doğrulama)**
+- ✅ Email/şifre ile kullanıcı kaydı
+- ✅ Kullanıcı girişi ve çıkışı
+- ✅ Session yönetimi ve otomatik yönlendirme
+- ✅ Supabase Auth entegrasyonu
+- ✅ Protected routes ve middleware
+- ✅ Backend authentication API endpoints
+
+**US-2, 3, 4: Trip Planning Flow (Seyahat Planlama Akışı)**
+- ✅ **Step 1**: Nereden, Nereye, Tarih, Bütçe girişi
+- ✅ **Step 2**: Çoklu şehir seçimi (Tayland şehirleri)
+- ✅ **Step 3**: Tercihler (konaklama tipi, seyahat stili)
+- ✅ Form validasyonları ve hata yönetimi
+- ✅ Date picker entegrasyonu
+- ✅ Backend trip endpoints (`POST /api/trips`, `GET /api/trips`)
+- ✅ Supabase veritabanı entegrasyonu
+- ✅ State management (Context API)
+
+**Veritabanı**
+- ✅ Supabase projesi kurulumu
+- ✅ Database schema (profiles, trip_requests, generated_plans)
+- ✅ Row Level Security (RLS) policies
+- ✅ Otomatik trigger'lar ve indeksler
+
+**Backend API**
+- ✅ Node.js/Express server kurulumu
+- ✅ TypeScript konfigürasyonu
+- ✅ Authentication endpoints (register, login, logout, profile)
+- ✅ Trip management endpoints (create, list, get)
+- ✅ Middleware (auth, error handling)
+- ✅ CORS, Helmet, Morgan
+
+### 🚧 Devam Eden Çalışmalar
+
+**US-5: AI Plan Oluşturma**
+1. Üçüncü parti API entegrasyonları
+   - Flight API (Skyscanner/Kiwi)
+   - Accommodation API (Booking.com/Hostelworld)
+   - Transportation API (Rome2rio/12Go)
+2. LLM entegrasyonu (Gemini/OpenAI)
+3. AI prompt mühendisliği ve optimizasyon
+4. Asenkron plan oluşturma servisi
+
+**US-6, 7, 8, 9: Plan Display (Plan Görüntüleme)**
+- Timeline UI component
+- Gün-gün plan kartları
+- Uçuş ve konaklama detayları
+- Bütçe breakdown görünümü
+- Alternatif seçenekler
 
 ## 🤝 Katkıda Bulunma
 
